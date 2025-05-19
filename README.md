@@ -65,9 +65,8 @@ This project, while primarily a front-end application, showcases several web dev
 1.  **Download/Clone:**
     * Download the project files or clone the repository:
         ```bash
-        git clone [https://github.com/GabrielBaiano/VOSTOK_OS_TERMINAL)
+        git clone [https://github.com/GabrielBaiano/VOSTOK_OS_TERMINAL.git)
         ```
-        (Replace `your-username/your-repository` with the actual path to your project)
 
 2.  **Open the Main File:**
     * Navigate to the project folder.
