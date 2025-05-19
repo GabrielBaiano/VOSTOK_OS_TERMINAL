@@ -1,7 +1,8 @@
 # Dystopian Terminal Interactive with AI
 
-<br>
+<img src="[URL_da_Imagem](https://media.discordapp.net/attachments/1062231431574720594/1373842365017624586/image.png?ex=682be1e8&is=682a9068&hm=0a02097923728aaffed0d187a1e9bfef6c07b56f3bb48dd88d1f49fd581ae043&=&format=webp&quality=lossless&width=1048&height=675)" alt="Texto Alternativo">
 
+<br>
 ## About The Project
 
 This project is an interactive terminal simulation with a dystopian Russian theme, where the user can interact with a fictional operating system (VOSTOK_OS) and converse with an integrated artificial intelligence (VOSTOK_AI).
