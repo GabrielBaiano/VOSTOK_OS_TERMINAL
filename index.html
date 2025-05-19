@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dystopian Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'VT323', monospace;
+            background-image: 
+                linear-gradient(rgba(10, 20, 10, 0.7), rgba(10, 20, 10, 0.7)),
+                repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0, 50, 0, 0.2) 1px, rgba(0, 50, 0, 0.2) 2px); /* Scanlines */
+            background-color: #0A0F0A; /* Very dark green */
+        }
+
+        #terminal {
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.2), 0 0 10px rgba(0,0,0,0.5) inset;
+            border: 1px solid rgba(0, 255, 0, 0.3);
+        }
+
+        #terminal-title-bar {
+            background-color: rgba(10, 30, 10, 0.8); /* Darker green-tinged bar */
+            border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+        }
+        
+        #terminal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        #terminal-content::-webkit-scrollbar-track {
+            background: rgba(0, 20, 0, 0.5);
+        }
+        #terminal-content::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 255, 0, 0.4);
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 0, 0.6);
+        }
+
+        .terminal-input-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            background-color: #32CD32; /* LimeGreen */
+            animation: blink 1s step-end infinite;
+            margin-left: 2px;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            from, to { background-color: transparent; }
+            50% { background-color: #32CD32; } /* LimeGreen */
+        }
+        
+        /* Custom selection color for better visibility on dark background */
+        ::selection {
+            background: rgba(0, 255, 0, 0.3); /* Greenish selection */
+            color: #E0E0E0;
+        }
+        ::-moz-selection { /* Firefox */
+            background: rgba(0, 255, 0, 0.3);
+            color: #E0E0E0;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-900 text-green-400 h-screen overflow-hidden flex items-center justify-center p-4">
+
+    <div id="terminal" class="w-[90vw] max-w-[800px] h-[75vh] max-h-[600px] bg-black bg-opacity-85 shadow-2xl rounded-sm overflow-hidden flex flex-col backdrop-blur-sm">
+        <div id="terminal-title-bar" class="p-1.5 text-xs text-gray-400 cursor-move flex justify-between items-center select-none">
+            <span>[VOSTOK_OS_TERMINAL] - /home/operative</span>
+            <div class="flex space-x-1.5">
+                <span class="w-2.5 h-2.5 bg-red-500 rounded-full inline-block opacity-70"></span>
+                <span class="w-2.5 h-2.5 bg-yellow-500 rounded-full inline-block opacity-70"></span>
+                <span class="w-2.5 h-2.5 bg-green-500 rounded-full inline-block opacity-70"></span>
+            </div>
+        </div>
+
+        <div id="terminal-content" class="flex-grow p-3 overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap">
+            </div>
+
+        <div class="p-2 bg-black bg-opacity-30 flex items-center border-t border-gray-700 border-opacity-50">
+            <span class="text-lime-400 mr-1 select-none">operative@vostok_mainframe:~$</span>
+            <input type="text" id="terminal-input" class="bg-transparent border-none outline-none flex-grow text-lime-400 caret-lime-400" spellcheck="false" autocomplete="off">
+            </div>
+    </div>
+
+    <script>
+        const terminal = document.getElementById('terminal');
+        const titleBar = document.getElementById('terminal-title-bar');
+        const contentElement = document.getElementById('terminal-content');
+        const inputElement = document.getElementById('terminal-input');
+
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        // "Site" data / system files
+        const siteData = {
+            "readme.txt": `
+██╗    ██╗███████╗██╗  ██╗████████╗ █████╗ ██╗     
+██║    ██║██╔════╝██║  ██║╚══██╔══╝██╔══██╗██║     
+██║ █╗ ██║█████╗  ███████║   ██║   ███████║██║     
+██║███╗██║██╔══╝  ██╔══██║   ██║   ██╔══██║██║     
+╚███╔███╔╝███████╗██║  ██║   ██║   ██║  ██║███████╗
+ ╚══╝╚══╝ ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚══════╝
+Vostok Central Terminal - Version 3.14
+----------------------------------------------------
+Welcome, operative.
+System online and ready to receive commands.
+For a list of available commands, type 'help'.
+Your mission is critical. Do not fail the Central Committee.
+`,
+            "news.feed": `
+[News Feed - Cycle 749.3]
+
+* Protocol "UNITY" activated in all sectors. Full compliance expected.
+* Food ration production increased by 7%. Citizens express gratitude.
+* Suspicious activity detected in Forbidden Zones. Patrols reinforced.
+* Remember: Big Brother is watching you. For your own good.
+`,
+            "manifest.dat": `
+[CORRUPTED DATA FILE DETECTED - UNKNOWN ORIGIN]
+
+...we will not be silent...
+...freedom is not a privilege, but a right...
+...the system's lies will crumble... the light of truth...
+...join the resistance... password: 'DAWN'...
+[END OF CORRUPTED FRAGMENT]
+`,
+            "sector_status.log": `
+[Sector Status]
+
+Sector ALPHA: Stable. Production: 105%. Loyalty: 99.8%.
+Sector BETA: Stable. Production: 98%. Loyalty: 99.5%.
+Sector GAMMA: Minor power outages. Production: 85%. Loyalty: 97.0%. Investigation underway.
+Sector DELTA: Under quarantine. Information classified.
+`,
+            "personal_log_entry_7.txt": `
+[Personal Log - Entry #7 - Operative 734]
+
+These dreams again... The city on fire, screams... The System says they're just side effects of performance enhancers.
+But sometimes I feel like they're memories. Or premonitions.
+I must trust The System. Trust is all we have left.
+Today's assignment: monitoring communication channel 4B. Nothing unusual... yet.
+`,
+            "help.cmd": `
+[Available Commands]
+
+  help          - Shows this help message.
+  ls            - Lists available files/directories.
+  cat <file>    - Displays the content of a file. (Example: cat news.feed)
+  echo <text>   - Prints the specified text.
+  date          - Shows the current system date and time.
+  clear / cls   - Clears the terminal screen.
+  banner        - Shows the welcome banner.
+  whoami        - Displays information about the current user.
+`
+        };
+
+        // Function to add output to the terminal
+        function appendOutput(htmlContent, isCommand = false) {
+            const promptText = `<span class="text-lime-400 select-none">operative@vostok_mainframe:~$</span> `;
+            if (isCommand) {
+                contentElement.innerHTML += `${promptText}${htmlContent}\n`;
+            } else {
+                contentElement.innerHTML += `${htmlContent}\n`;
+            }
+            contentElement.scrollTop = contentElement.scrollHeight; // Auto-scroll
+        }
+        
+        // Function to add an input line to the output
+        function appendInputLine(command) {
+            const promptText = `<span class="text-lime-400 select-none">operative@vostok_mainframe:~$</span> `;
+            contentElement.innerHTML += `${promptText}${escapeHtml(command)}\n`;
+            contentElement.scrollTop = contentElement.scrollHeight;
+        }
+
+        function escapeHtml(unsafe) {
+            if (unsafe === null || unsafe === undefined) return '';
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        // Process commands
+        function processCommand(command) {
+            appendInputLine(command); // Add the typed command to history
+            const parts = command.toLowerCase().trim().split(' ');
+            const cmd = parts[0];
+            const arg = parts.slice(1).join(' ');
+
+            switch (cmd) {
+                case 'help':
+                    appendOutput(siteData["help.cmd"]);
+                    break;
+                case 'ls':
+                case 'dir':
+                    let fileList = '[Available Files/Directories]\n\n';
+                    Object.keys(siteData).forEach(file => {
+                        if (file.endsWith('.cmd')) return; // Don't list internal commands as files
+                        fileList += `  ${file}\n`;
+                    });
+                    appendOutput(fileList);
+                    break;
+                case 'cat':
+                case 'type':
+                case 'open':
+                    if (arg) {
+                        if (siteData[arg]) {
+                            appendOutput(escapeHtml(siteData[arg]));
+                        } else if (siteData[arg + '.txt']){
+                             appendOutput(escapeHtml(siteData[arg + '.txt']));
+                        } else if (siteData[arg + '.dat']){
+                             appendOutput(escapeHtml(siteData[arg + '.dat']));
+                        } else if (siteData[arg + '.log']){
+                             appendOutput(escapeHtml(siteData[arg + '.log']));
+                        } else if (siteData[arg + '.feed']){
+                             appendOutput(escapeHtml(siteData[arg + '.feed']));
+                        }
+                        else {
+                            appendOutput(`Error: File '${escapeHtml(arg)}' not found.`);
+                        }
+                    } else {
+                        appendOutput("Error: Specify a filename. Example: cat readme.txt");
+                    }
+                    break;
+                case 'echo':
+                    appendOutput(escapeHtml(arg));
+                    break;
+                case 'date':
+                    const now = new Date();
+                    // Format: DD.MM.YYYY HH:MM:SS (System Cycle XX.Y)
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const month = String(now.getMonth() + 1).padStart(2, '0'); // January is 0
+                    const year = now.getFullYear();
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    const seconds = String(now.getSeconds()).padStart(2, '0');
+                    const systemCycleMajor = Math.floor(Math.random() * 900) + 100;
+                    const systemCycleMinor = Math.floor(Math.random() * 9) + 1;
+                    appendOutput(`Current system date: ${day}.${month}.${year} ${hours}:${minutes}:${seconds} (Cycle ${systemCycleMajor}.${systemCycleMinor})`);
+                    break;
+                case 'clear':
+                case 'cls':
+                    contentElement.innerHTML = '';
+                    break;
+                case 'banner':
+                case 'motd':
+                    appendOutput(siteData["readme.txt"]);
+                    break;
+                case 'whoami':
+                    appendOutput("User: operative_734\nAuthorization: Level GAMMA\nLocation: Vostok Central Mainframe");
+                    break;
+                default:
+                    if (command.trim() !== '') {
+                        appendOutput(`Command not recognized: '${escapeHtml(command)}'. Type 'help' for a list of commands.`);
+                    }
+            }
+        }
+
+        // Event listener for input
+        inputElement.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const command = inputElement.value;
+                processCommand(command);
+                inputElement.value = '';
+            }
+        });
+
+        // Terminal dragging functionality
+        titleBar.addEventListener('mousedown', function(e) {
+            // Prevent text selection while dragging
+            e.preventDefault(); 
+            isDragging = true;
+            // Calculate mouse offset relative to the top-left corner of the terminal
+            offsetX = e.clientX - terminal.offsetLeft;
+            offsetY = e.clientY - terminal.offsetTop;
+            terminal.style.cursor = 'grabbing'; // Change cursor while dragging
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            // Set the new terminal position
+            let newX = e.clientX - offsetX;
+            let newY = e.clientY - offsetY;
+
+            // Constrain movement within the browser window
+            const maxX = window.innerWidth - terminal.offsetWidth;
+            const maxY = window.innerHeight - terminal.offsetHeight;
+
+            newX = Math.max(0, Math.min(newX, maxX));
+            newY = Math.max(0, Math.min(newY, maxY));
+            
+            terminal.style.left = newX + 'px';
+            terminal.style.top = newY + 'px';
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                terminal.style.cursor = 'default'; // Restore default cursor
+            }
+        });
+        
+        // Focus on input when clicking anywhere on the terminal (except title bar)
+        terminal.addEventListener('click', function(event) {
+            if (event.target !== titleBar && !titleBar.contains(event.target)) {
+                 inputElement.focus();
+            }
+        });
+
+
+        // Show initial banner
+        appendOutput(siteData["readme.txt"]);
+        inputElement.focus(); // Focus on input on load
+
+    </script>
+</body>
+</html>
