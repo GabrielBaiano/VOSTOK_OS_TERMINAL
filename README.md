@@ -1,6 +1,6 @@
 # Dystopian Terminal Interactive with AI
 
-![](https://media.discordapp.net/attachments/1062231431574720594/1373842365017624586/image.png?ex=682be1e8&is=682a9068&hm=0a02097923728aaffed0d187a1e9bfef6c07b56f3bb48dd88d1f49fd581ae043&=&format=webp&quality=lossless&width=1048&height=675)
+![](https://media.licdn.com/dms/image/v2/D4D22AQFaveGIMCSlcw/feedshare-shrink_1280/B4DZbqeJoQG0Ak-/0/1747690495060?e=1750896000&v=beta&t=v2QYAn5jNM0vpc6kz5R-1PPb4Wn4zWkXdweJBttdfAI)
 
 https://vostok-os-terminal.vercel.app/
 <br>
